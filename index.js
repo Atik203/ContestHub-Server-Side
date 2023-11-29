@@ -54,8 +54,6 @@ const verifyAdmin = async (req, res, next) => {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
     const aboutUsCollection = client
       .db("RestaurantManage")
       .collection("aboutUs");
@@ -64,6 +62,7 @@ async function run() {
       .collection("reviews");
     const userCollection = client.db("ContestHubDB").collection("Users");
     const contestCollection = client.db("ContestHubDB").collection("Contests");
+    const creatorCollection = client.db("ContestHubDB").collection("Creators");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -126,6 +125,7 @@ async function run() {
       const result = await contestCollection.find().toArray();
       res.send(result);
     });
+
     app.get("/popularContest", async (req, res) => {
       try {
         const result = await contestCollection
@@ -136,6 +136,28 @@ async function run() {
         res.send(result);
       } catch (error) {
         console.error(error);
+      }
+    });
+
+    app.get("/contestWinner", async (req, res) => {
+      try {
+        const result = await contestCollection
+          .find({ winner_name: { $exists: true, $ne: null } })
+          .project({
+            _id: 1,
+            img: 1,
+            name: 1,
+            category: 1,
+            prize: 1,
+            winner_name: 1,
+            winner_img: 1,
+          })
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send({ error: "Internal server error" });
       }
     });
 
