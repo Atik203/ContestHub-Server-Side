@@ -63,6 +63,8 @@ async function run() {
       .db("RestaurantManage")
       .collection("reviews");
     const userCollection = client.db("ContestHubDB").collection("Users");
+    const contestCollection = client.db("ContestHubDB").collection("Contests");
+
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -94,6 +96,11 @@ async function run() {
 
     app.get("/AboutUs", async (req, res) => {
       const result = await aboutUsCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/contests", async (req, res) => {
+      const result = await contestCollection.find().toArray();
       res.send(result);
     });
 
