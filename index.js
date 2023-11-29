@@ -99,9 +99,44 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/details/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+
+      const query = { _id: new ObjectId(id) };
+      const result = await contestCollection.findOne(query);
+      res.send(result);
+    });
+    app.get("/searchContest", async (req, res) => {
+      try {
+        const query = req.query.q;
+        if (!query) {
+          res.send([]);
+          return;
+        }
+        const result = await contestCollection
+          .find({ category: { $regex: query, $options: "i" } })
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
     app.get("/contests", async (req, res) => {
       const result = await contestCollection.find().toArray();
       res.send(result);
+    });
+    app.get("/popularContest", async (req, res) => {
+      try {
+        const result = await contestCollection
+          .find()
+          .sort({ participant: -1 })
+          .limit(6)
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+      }
     });
 
     app.post("/users", async (req, res) => {
