@@ -41,28 +41,24 @@ const verifyToken = async (req, res, next) => {
   });
   next();
 };
-const verifyAdmin = async (req, res, next) => {
-  const email = req.user?.email;
-  const query = { email: email };
-  const user = await userCollection.findOne(query);
-  const isAdmin = user?.role === "admin";
-  if (!isAdmin) {
-    return res.status(403).send({ message: "forbidden access" });
-  }
-  next();
-};
-
+const aboutUsCollection = client.db("ContestHubDB").collection("AboutUs");
+const reviewCollection = client.db("RestaurantManage").collection("reviews");
+const userCollection = client.db("ContestHubDB").collection("Users");
+const contestCollection = client.db("ContestHubDB").collection("Contests");
+const creatorCollection = client.db("ContestHubDB").collection("Creators");
+const leadersCollection = client.db("ContestHubDB").collection("LeaderBoards");
 async function run() {
   try {
-    const aboutUsCollection = client
-      .db("RestaurantManage")
-      .collection("aboutUs");
-    const reviewCollection = client
-      .db("RestaurantManage")
-      .collection("reviews");
-    const userCollection = client.db("ContestHubDB").collection("Users");
-    const contestCollection = client.db("ContestHubDB").collection("Contests");
-    const creatorCollection = client.db("ContestHubDB").collection("Creators");
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.user?.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -95,6 +91,11 @@ async function run() {
 
     app.get("/AboutUs", async (req, res) => {
       const result = await aboutUsCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/leaderboard", async (req, res) => {
+      const result = await leadersCollection.find().toArray();
       res.send(result);
     });
 
@@ -159,6 +160,70 @@ async function run() {
         console.log(error);
         res.status(500).send({ error: "Internal server error" });
       }
+    });
+
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      try {
+        const email = req.params.email;
+        if (email !== req.user?.email) {
+          return res.status(403).send({ message: "unauthorized" });
+        }
+        const query = { email: email };
+        const user = await userCollection.findOne(query);
+        let admin = false;
+        if (user) {
+          admin = user?.role === "admin";
+        }
+        console.log(admin);
+        res.send({ admin });
+      } catch (error) {
+        console.log(error);
+      }
+    });
+    app.delete("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.delete("/contest/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await contestCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch("/contest/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params;
+
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          Confirm: "confirmed",
+        },
+      };
+      const result = await contestCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
+    app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params;
+      const { role } = req.body;
+
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: role,
+        },
+      };
+
+      const result = await userCollection.updateOne(query, updatedDoc);
+      res.send(result);
     });
 
     app.post("/users", async (req, res) => {
