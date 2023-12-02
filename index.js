@@ -101,11 +101,11 @@ async function run() {
 
     app.get("/details/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-
       const query = { _id: new ObjectId(id) };
       const result = await contestCollection.findOne(query);
       res.send(result);
     });
+
     app.get("/searchContest", async (req, res) => {
       try {
         const query = req.query.q;
@@ -122,8 +122,39 @@ async function run() {
       }
     });
 
+    app.get("/singleContest/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const query = { _id: new ObjectId(id) };
+
+      const result = await creatorCollection.findOne(query);
+
+      res.send(result);
+    });
+
     app.get("/contests", async (req, res) => {
       const result = await contestCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/AddContest", async (req, res) => {
+      const query = req.body;
+
+      const result = await contestCollection.insertOne(query);
+      res.send(result);
+    });
+
+    app.post("/AddCreatorContest", async (req, res) => {
+      const query = req.body;
+
+      const result = await creatorCollection.insertOne(query);
+      res.send(result);
+    });
+
+    app.get("/creator", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await creatorCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -175,16 +206,17 @@ async function run() {
         }
         const query = { email: email };
         const user = await userCollection.findOne(query);
-        let admin = false;
+        let admin = "normal";
         if (user) {
-          admin = user?.role === "admin";
+          admin = user.role || admin;
         }
-        console.log(admin);
+
         res.send({ admin });
       } catch (error) {
         console.log(error);
       }
     });
+
     app.delete("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params;
       const query = { _id: new ObjectId(id) };
@@ -196,6 +228,37 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await contestCollection.deleteOne(query);
       res.send(result);
+    });
+
+    app.patch("/updateContest/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const { ContestData } = req.body;
+        console.log(ContestData);
+        console.log(id);
+        const filter = { _id: new ObjectId(id) };
+        const update = {
+          $set: {
+            name: ContestData.name,
+            img: ContestData.img,
+            prize: ContestData.prize,
+            category: ContestData.category,
+            participant: ContestData.participant,
+            winner_name: ContestData.winner_name,
+            winner_img: ContestData.winner_img,
+            description: ContestData.description,
+            deadline: ContestData.deadline,
+            instruction: ContestData.instruction,
+          },
+        };
+
+        const result = await contestCollection.updateOne(filter, update);
+
+        // res.send(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: "Internal server error" });
+      }
     });
 
     app.patch("/contest/:id", verifyToken, verifyAdmin, async (req, res) => {
@@ -210,7 +273,18 @@ async function run() {
       const result = await contestCollection.updateOne(query, updatedDoc);
       res.send(result);
     });
+    app.patch("/creator/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params;
 
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          Confirm: "confirmed",
+        },
+      };
+      const result = await creatorCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
     app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params;
       const { role } = req.body;
