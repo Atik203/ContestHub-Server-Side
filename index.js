@@ -178,6 +178,19 @@ async function run() {
       }
     });
 
+    app.get("/bestCreator", async (req, res) => {
+      try {
+        const result = await creatorCollection
+          .find()
+          .sort({ participant: -1 })
+          .limit(3)
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
     app.get("/contestWinner", async (req, res) => {
       try {
         const result = await contestCollection
@@ -299,18 +312,23 @@ async function run() {
       const result = await contestCollection.updateOne(query, updatedDoc);
       res.send(result);
     });
-    app.patch("/creator/:id", verifyToken, verifyAdmin, async (req, res) => {
-      const id = req.params;
 
-      const query = { _id: new ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          Confirm: "confirmed",
-        },
-      };
-      const result = await creatorCollection.updateOne(query, updatedDoc);
-      res.send(result);
-    });
+    app.patch(
+      "/creator/:contestId",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const contestId = parseInt(req.params.contestId);
+        const query = { contestId: contestId };
+        const updatedDoc = {
+          $set: {
+            Confirm: "confirmed",
+          },
+        };
+        const result = await creatorCollection.updateOne(query, updatedDoc);
+        res.send(result);
+      }
+    );
     app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params;
       const { role } = req.body;
