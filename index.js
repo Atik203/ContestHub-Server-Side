@@ -132,6 +132,13 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/contestData", async (req, res) => {
+      const contestId = parseInt(req.query.contestId);
+      const query = { contestId: contestId };
+      const result = await contestCollection.findOne(query);
+      res.send(result);
+    });
+
     app.get("/contests", async (req, res) => {
       const result = await contestCollection.find().toArray();
       res.send(result);
@@ -233,9 +240,8 @@ async function run() {
     app.patch("/updateContest/:id", async (req, res) => {
       try {
         const id = req.params.id;
-        const { ContestData } = req.body;
-        console.log(ContestData);
-        console.log(id);
+        const ContestData = req.body;
+
         const filter = { _id: new ObjectId(id) };
         const update = {
           $set: {
@@ -243,18 +249,38 @@ async function run() {
             img: ContestData.img,
             prize: ContestData.prize,
             category: ContestData.category,
-            participant: ContestData.participant,
-            winner_name: ContestData.winner_name,
-            winner_img: ContestData.winner_img,
             description: ContestData.description,
             deadline: ContestData.deadline,
             instruction: ContestData.instruction,
           },
         };
-
         const result = await contestCollection.updateOne(filter, update);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
 
-        // res.send(result);
+    app.patch("/updateCreatorContest/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const ContestData = req.body;
+
+        const filter = { _id: new ObjectId(id) };
+        const update = {
+          $set: {
+            name: ContestData.name,
+            img: ContestData.img,
+            prize: ContestData.prize,
+            category: ContestData.category,
+            description: ContestData.description,
+            deadline: ContestData.deadline,
+            instruction: ContestData.instruction,
+          },
+        };
+        const result = await creatorCollection.updateOne(filter, update);
+        res.send(result);
       } catch (error) {
         console.log(error);
         res.status(500).json({ error: "Internal server error" });
