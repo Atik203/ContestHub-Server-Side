@@ -10,7 +10,7 @@ const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://restocontrol.surge.sh"],
+    origin: ["http://localhost:5173", "https://contesthub.surge.sh"],
     credentials: true,
   })
 );
