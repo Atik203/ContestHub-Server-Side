@@ -115,17 +115,30 @@ async function run() {
 
     app.post("/payment", async (req, res) => {
       const payment = req.body;
-
       const result = await paymentCollection.insertOne(payment);
       res.send(result);
     });
 
-    app.get("/payment/:email", async (req, res) => {
+    app.get("/payment/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-
       const query = { email: email };
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
+    });
+
+    app.get("/registered/:contestId", async (req, res) => {
+      const contestId = parseInt(req.params.contestId);
+      if (!contestId) {
+        return res.status(404);
+      }
+      const query = { contestId: contestId };
+      const result = await paymentCollection.findOne(query);
+      let registered = false;
+
+      if (result?.contestId === contestId) {
+        registered = true;
+      }
+      res.send({ registered });
     });
 
     app.get("/AboutUs", async (req, res) => {
