@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 app.use(
   cors({
@@ -44,9 +45,11 @@ const verifyToken = async (req, res, next) => {
 const aboutUsCollection = client.db("ContestHubDB").collection("AboutUs");
 const reviewCollection = client.db("RestaurantManage").collection("reviews");
 const userCollection = client.db("ContestHubDB").collection("Users");
-const contestCollection = client.db("ContestHubDB").collection("Contests");
+const contestCollection = client.db("ContestHubDB").collection("ContestDB");
 const creatorCollection = client.db("ContestHubDB").collection("Creators");
 const leadersCollection = client.db("ContestHubDB").collection("LeaderBoards");
+const paymentCollection = client.db("ContestHubDB").collection("PaymentDB");
+
 async function run() {
   try {
     const verifyAdmin = async (req, res, next) => {
@@ -84,8 +87,44 @@ async function run() {
         .send({ success: true });
     });
 
-    app.get("/review", async (req, res) => {
-      const result = await reviewCollection.find().toArray();
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+
+      if (!price || isNaN(parseInt(price))) {
+        return res.status(400).send({ error: "Invalid price value" });
+      }
+      const amount = parseInt(price) * 100;
+      if (isNaN(amount) || amount <= 0) {
+        return res.status(400).send({ error: "Invalid amount value" });
+      }
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      } catch (error) {
+        console.error("Stripe error:", error);
+        res.status(500).send({ error: "Internal server error" });
+      }
+    });
+
+    app.post("/payment", async (req, res) => {
+      const payment = req.body;
+
+      const result = await paymentCollection.insertOne(payment);
+      res.send(result);
+    });
+
+    app.get("/payment/:email", async (req, res) => {
+      const email = req.params.email;
+
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -101,6 +140,7 @@ async function run() {
 
     app.get("/details/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
+
       const query = { _id: new ObjectId(id) };
       const result = await contestCollection.findOne(query);
       res.send(result);
