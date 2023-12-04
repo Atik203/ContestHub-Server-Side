@@ -422,6 +422,13 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/userStats/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params;
       const { role } = req.body;
