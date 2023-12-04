@@ -399,6 +399,29 @@ async function run() {
         res.send(result);
       }
     );
+    app.patch("/updateProfile/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const data = req.body;
+
+      const query = { email: email };
+      const updateDoc = {
+        $set: {
+          name: data.displayName,
+          photo: data.photoURL,
+        },
+      };
+      const result = await userCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    app.get("/user/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+
+      res.send(result);
+    });
+
     app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params;
       const { role } = req.body;
