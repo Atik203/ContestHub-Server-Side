@@ -126,6 +126,23 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/all-participant", verifyToken, async (req, res) => {
+      const result = await paymentCollection.find().toArray();
+      res.send(result);
+    });
+    app.patch("/setWinner/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const winner = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          winner_name: winner.name,
+        },
+      };
+      const result = await paymentCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
     app.get("/registered/:contestId", async (req, res) => {
       const contestId = parseInt(req.params.contestId);
       if (!contestId) {
